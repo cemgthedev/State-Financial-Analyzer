@@ -11,8 +11,8 @@ Projeto da disciplina de Desenvolvimento de Software para Persistência. Trata-s
   ```ini
   sqlalchemy.url = postgresql://postgres:12345678@localhost:5432/sfa
   ```
-- No arquivo `env.py`, adicione `SQLModel.metadata` como valor da variável `target_metadata`.
-- Gere a migração (na configuração do banco de dados e após alterações nas entidades):
+- No arquivo `env.py`, adicione `SQLModel.metadata` como valor da variável `target_metadata` e `from src.models import *` para importação dos modelos.
+- Gere a migração (na configuração do banco de dados e após alterações nas entidades) o bd deve existir na sua máquina:
   ```sh
   alembic revision --autogenerate -m "título da migração"
   ```
