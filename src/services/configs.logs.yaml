@@ -1,0 +1,106 @@
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  detailed:
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: detailed
+    stream: ext://sys.stdout
+
+  file_contracts:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: detailed
+    filename: "./logs/contracts.log"
+
+  file_contract_values:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: detailed
+    filename: "./logs/contract_values.log"
+
+  file_contract_dates:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: detailed
+    filename: "./logs/contract_dates.log"
+
+  file_administrative_processes:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: detailed
+    filename: "./logs/administrative_processes.log"
+
+  file_agreements:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: detailed
+    filename: "./logs/agreements.log"
+
+  file_agreement_values:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: detailed
+    filename: "./logs/agreement_values.log"
+  
+  file_agreement_dates:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: detailed
+    filename: "./logs/agreement_dates.log"
+
+  file_accountability:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: detailed
+    filename: "./logs/accountability.log"
+
+loggers:
+  contracts:
+    level: DEBUG
+    handlers: [console, file_contracts]
+    propagate: false
+
+  contract_values:
+    level: DEBUG
+    handlers: [console, file_contract_values]
+    propagate: false
+
+  contract_dates:
+    level: DEBUG
+    handlers: [console, file_contract_dates]
+    propagate: false
+
+  administrative_processes:
+    level: DEBUG
+    handlers: [console, file_administrative_processes]
+    propagate: false
+
+  agreements:
+    level: DEBUG
+    handlers: [console, file_agreements]
+    propagate: false
+
+  agreement_values:
+    level: DEBUG
+    handlers: [console, file_agreement_values]
+    propagate: false
+
+  agreement_dates:
+    level: DEBUG
+    handlers: [console, file_agreement_dates]
+    propagate: false
+
+  accountability:
+    level: DEBUG
+    handlers: [console, file_accountability]
+    propagate: false
+
+root:
+  level: WARNING
+  handlers: [console]
