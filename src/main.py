@@ -10,11 +10,20 @@ from services.agreements import router as agreements_router
 from services.agreement_values import router as agreement_values_router
 from services.agreement_dates import router as agreement_dates_router
 from services.accountability import router as accountability_router
+from utils.generate_logs import generate_logs
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    generate_logs()
+    yield
 
 app = FastAPI(
     title="State Financial Analyzer",
     description="API de análise financeira de contratos e convênios do Ceará",
+    lifespan=lifespan
 )
+
 
 @app.get("/")
 def get_db(db: Session = Depends(get_db)):
