@@ -3,4 +3,3 @@
 **/logs
 .vscode
 alembic.ini
-src/config.yaml
