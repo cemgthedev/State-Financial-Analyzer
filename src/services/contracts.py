@@ -79,7 +79,6 @@ def update_contract(contract_id: int, new_contract: Contract, db: Session = Depe
         
         logger.info(f'Atualizando contrato {contract_id}')
         db.commit()
-        db.refresh(contract)
         logger.info("Contrato atualizado com sucesso")
         return {"message": "Contrato atualizado com sucesso"}
     
