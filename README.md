@@ -33,7 +33,7 @@ Projeto da disciplina de Desenvolvimento de Software para Persistência. Trata-s
   ```
 - Instalar bibliotecas:
   ```sh
-  pip install fastapi uvicorn sqlmodel psycopg2 alembic pyyaml
+  pip install -r requirements.txt
   ```
 - Entrar na pasta `src`:
   ```sh
