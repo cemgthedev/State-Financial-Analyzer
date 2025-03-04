@@ -117,3 +117,184 @@ def delete_agreement_value(agreement_value_id: int, db: Session = Depends(get_db
     
     logger.info(f'deletando valor de convênio {agreement_value_id}')
     return {"message": f"Valor de convênio {agreement_value_id} deletado com sucesso"}
+
+@router.get('/atributos', description="Lista os atributos do modelo de valores de convênios")
+def get_agreement_values_attributes(
+    agreement_id: Optional[int],
+    valor_inicial_total: Optional[float],
+    valor_inicial_repasse_concedente: Optional[float],
+    valor_inicial_contrapartida_convenente: Optional[float],
+    valor_atualizado_total: Optional[float],
+    valor_pago: Optional[float], db: Session = Depends(get_db)):
+    try:
+        query = select(AgreementValues)
+        if agreement_id is not None:
+            query = query.where(AgreementValues.agreement_id == agreement_id)
+        if valor_inicial_total is not None:
+            query = query.where(AgreementValues.valor_inicial_total == valor_inicial_total)
+        if valor_inicial_repasse_concedente is not None:
+            query = query.where(AgreementValues.valor_inicial_repasse_concedente == valor_inicial_repasse_concedente)
+        if valor_inicial_contrapartida_convenente is not None:
+            query = query.where(AgreementValues.valor_inicial_contrapartida_convenente == valor_inicial_contrapartida_convenente)
+        if valor_atualizado_total is not None:
+            query = query.where(AgreementValues.valor_atualizado_total == valor_atualizado_total)
+        if valor_pago is not None:
+            query = query.where(AgreementValues.valor_pago == valor_pago)
+        
+        agreement_values = db.exec(query).all()
+    except Exception as e:
+        logger.error(f"Erro ao buscar valores dos convênios: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Erro ao buscar valores dos convênios")
+    
+    logger.info('buscando valores dos convênios com os atributos fornecidos')
+    result = [item.model_dump() for item in agreement_values]
+    return result
+
+@router.get('/quantity', description="Quantidade de valores de convênios")
+def get_agreement_values_quantity(db: Session = Depends(get_db)):
+    try:
+        quantity = db.exec(select(func.count(AgreementValues.id))).one()        
+    except Exception as e:
+        logger.error(f"Erro ao buscar quantidade de valores dos convênios: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Erro ao buscar quantidade de valores dos convênios")
+    
+    logger.info('buscando quantidade de valores dos convênios')
+    return {'quantidade de valores dos convênios': quantity}
+
+@router.get('/search/valor_inicial_total', description='Faz uma pesquisa por valor inicial total de convênios')
+def get_search_valor_inicial_total(min_value: Optional[float] = None, max_value: Optional[float] = None, db: Session = Depends(get_db)):
+    try:
+        query = select(AgreementValues)
+        if min_value is not None:
+            query = query.where(AgreementValues.valor_inicial_total >= min_value)
+        if max_value is not None:
+            query = query.where(AgreementValues.valor_inicial_total <= max_value)
+        
+        data = db.exec(query).all()
+    except Exception as e:
+        logger.error(f'Erro ao listar os valores de convênios pelo valor inicial total. Erro: {str(e)}')
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f'Erro ao listar os valores de convênios pelo valor inicial total. Erro: {str(e)}')
+    
+    return [
+        {
+            'id': item.id,
+            'agreement_id': item.agreement_id,
+            'valor_inicial_total': item.valor_inicial_total,
+            'valor_inicial_repasse_concedente': item.valor_inicial_repasse_concedente,
+            'valor_inicial_contrapartida_convenente': item.valor_inicial_contrapartida_convenente,
+            'valor_atualizado_total': item.valor_atualizado_total,
+            'valor_pago': item.valor_pago
+        } for item in data
+    ]
+
+@router.get('/search/valor_inicial_repasse_concedente', description='Faz uma pesquisa por valor inicial repasse concedente de convênios')
+def get_search_valor_inicial_repasse_concedente(min_value: Optional[float] = None, max_value: Optional[float] = None, db: Session = Depends(get_db)):
+    try:
+        query = select(AgreementValues)
+        if min_value is not None:
+            query = query.where(AgreementValues.valor_inicial_repasse_concedente >= min_value)
+        if max_value is not None:
+            query = query.where(AgreementValues.valor_inicial_repasse_concedente <= max_value)
+        
+        data = db.exec(query).all()
+    except Exception as e:
+        logger.error(f'Erro ao listar os valores de convênios pelo valor inicial repasse concedente. Erro: {str(e)}')
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f'Erro ao listar os valores de convênios pelo valor inicial repasse concedente. Erro: {str(e)}')
+    
+    return [
+        {
+            'id': item.id,
+            'agreement_id': item.agreement_id,
+            'valor_inicial_total': item.valor_inicial_total,
+            'valor_inicial_repasse_concedente': item.valor_inicial_repasse_concedente,
+            'valor_inicial_contrapartida_convenente': item.valor_inicial_contrapartida_convenente,
+            'valor_atualizado_total': item.valor_atualizado_total,
+            'valor_pago': item.valor_pago
+        } for item in data
+    ]
+
+@router.get('/search/valor_inicial_contrapartida_convenente', description='Faz uma pesquisa por valor inicial contrapartida convenente de convênios')
+def get_search_valor_inicial_contrapartida_convenente(min_value: Optional[float] = None, max_value: Optional[float] = None, db: Session = Depends(get_db)):
+    try:
+        query = select(AgreementValues)
+        if min_value is not None:
+            query = query.where(AgreementValues.valor_inicial_contrapartida_convenente >= min_value)
+        if max_value is not None:
+            query = query.where(AgreementValues.valor_inicial_contrapartida_convenente <= max_value)
+        
+        data = db.exec(query).all()
+    except Exception as e:
+        logger.error(f'Erro ao listar os valores de convênios pelo valor inicial contrapartida convenente. Erro: {str(e)}')
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f'Erro ao listar os valores de convênios pelo valor inicial contrapartida convenente. Erro: {str(e)}')
+    
+    return [
+        {
+            'id': item.id,
+            'agreement_id': item.agreement_id,
+            'valor_inicial_total': item.valor_inicial_total,
+            'valor_inicial_repasse_concedente': item.valor_inicial_repasse_concedente,
+            'valor_inicial_contrapartida_convenente': item.valor_inicial_contrapartida_convenente,
+            'valor_atualizado_total': item.valor_atualizado_total,
+            'valor_pago': item.valor_pago
+        } for item in data
+    ]
+
+@router.get('/search/valor_atualizado_total', description='Faz uma pesquisa por valor atualizado total de convênios')
+def get_search_valor_atualizado_total(min_value: Optional[float] = None, max_value: Optional[float] = None, db: Session = Depends(get_db)):
+    try:
+        query = select(AgreementValues)
+        if min_value is not None:
+            query = query.where(AgreementValues.valor_atualizado_total >= min_value)
+        if max_value is not None:
+            query = query.where(AgreementValues.valor_atualizado_total <= max_value)
+        
+        data = db.exec(query).all()
+    except Exception as e:
+        logger.error(f'Erro ao listar os valores de convênios pelo valor atualizado total. Erro: {str(e)}')
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f'Erro ao listar os valores de convênios pelo valor atualizado total. Erro: {str(e)}')
+    
+    return [
+        {
+            'id': item.id,
+            'agreement_id': item.agreement_id,
+            'valor_inicial_total': item.valor_inicial_total,
+            'valor_inicial_repasse_concedente': item.valor_inicial_repasse_concedente,
+            'valor_inicial_contrapartida_convenente': item.valor_inicial_contrapartida_convenente,
+            'valor_atualizado_total': item.valor_atualizado_total,
+            'valor_pago': item.valor_pago
+        } for item in data
+    ]
+
+@router.get('/search/valor_pago', description='Faz uma pesquisa por valor pago de convênios')
+def get_search_valor_pago(min_value: Optional[float] = None, max_value: Optional[float] = None, db: Session = Depends(get_db)):
+    try:
+        query = select(AgreementValues)
+        if min_value is not None:
+            query = query.where(AgreementValues.valor_pago >= min_value)
+        if max_value is not None:
+            query = query.where(AgreementValues.valor_pago <= max_value)
+        
+        data = db.exec(query).all()
+    except Exception as e:
+        logger.error(f'Erro ao listar os valores de convênios pelo valor pago. Erro: {str(e)}')
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f'Erro ao listar os valores de convênios pelo valor pago. Erro: {str(e)}')
+    
+    return [
+        {
+            'id': item.id,
+            'agreement_id': item.agreement_id,
+            'valor_inicial_total': item.valor_inicial_total,
+            'valor_inicial_repasse_concedente': item.valor_inicial_repasse_concedente,
+            'valor_inicial_contrapartida_convenente': item.valor_inicial_contrapartida_convenente,
+            'valor_atualizado_total': item.valor_atualizado_total,
+            'valor_pago': item.valor_pago
+        } for item in data
+    ]
+
