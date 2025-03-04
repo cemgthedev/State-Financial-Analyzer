@@ -1,30 +1,15 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlmodel import Session, and_, select
-from sqlalchemy.sql import func
+from sqlmodel import Session, select, func
 from database import get_db
 from models.agreement_dates import AgreementDates
-from services.configs import agreement_dates_logger as logger
+from services.configs import agreement_values_logger as logger
+from datetime import date
 
-
-# Criar roteador
+# Criar roteador para AgreementDates
 router = APIRouter(prefix="/agreement_dates", tags=["Agreement Dates"])
 
-
-# Listar datas de convênios
-@router.get("/", response_model=list[AgreementDates], description="Lista as datas dos convênios")
-def list_agreement_dates(db: Session = Depends(get_db)):
-    try:
-        agreement_dates = db.exec(select(AgreementDates)).all()
-    except Exception as e:
-        logger.error(f"Erro ao listar datas dos convênios: {str(e)}")
-        db.rollback()
-        raise HTTPException(status_code=500, detail="Erro ao listar datas dos convênios")
-
-    logger.info('listando todas as datas dos convênios')
-    return agreement_dates
-
-# Listar datas de convênios
+# Listar datas de convênios 
 @router.get("/")
 def list_agreement_dates(page: Optional[int] = Query(1, gt=0), length: Optional[int] = Query(100, gt=0), db: Session = Depends(get_db)):
     try:
@@ -45,6 +30,10 @@ def list_agreement_dates(page: Optional[int] = Query(1, gt=0), length: Optional[
             {
                 "id": item.id,
                 "agreement_id": item.agreement_id,
+                "data_assinatura": item.data_assinatura,
+                "data_termino": item.data_termino,
+                "data_publi_ce": item.data_publi_ce,
+                "data_publi_doe": item.data_publi_doe
             }
             for item in agreement_dates
         ]
@@ -53,8 +42,8 @@ def list_agreement_dates(page: Optional[int] = Query(1, gt=0), length: Optional[
     return pagination
 
 # Obter data de convênio
-@router.get("/{agreement_date_id}")
-def get_agreement_date_by_id(agreement_date_id: int, db: Session = Depends(get_db)):
+@router.get("/{agreement_date_id}", response_model=AgreementDates)
+def get_agreement_date(agreement_date_id: int, db: Session = Depends(get_db)):
     try:
         agreement_date = db.get(AgreementDates, agreement_date_id)
     except Exception as e:
@@ -69,7 +58,7 @@ def get_agreement_date_by_id(agreement_date_id: int, db: Session = Depends(get_d
     logger.info(f'obtendo data de convênio {agreement_date_id}')
     return agreement_date
 
-# Atualiza data de convênio
+# Atualiza uma data de convênio
 @router.put("/{agreement_date_id}")
 def update_agreement_date(agreement_date_id: int, new_date: AgreementDates, db: Session = Depends(get_db)):
     try:
@@ -80,6 +69,10 @@ def update_agreement_date(agreement_date_id: int, new_date: AgreementDates, db: 
 
         # Atualizando os campos da data de convênio
         agreement_date.agreement_id = new_date.agreement_id
+        agreement_date.data_assinatura = new_date.data_assinatura
+        agreement_date.data_termino = new_date.data_termino
+        agreement_date.data_publi_ce = new_date.data_publi_ce
+        agreement_date.data_publi_doe = new_date.data_publi_doe
 
         # Salvando as alterações no banco de dados
         db.commit()
@@ -111,11 +104,26 @@ def delete_agreement_date(agreement_date_id: int, db: Session = Depends(get_db))
     return {"message": f"Data de convênio {agreement_date_id} deletada com sucesso"}
 
 @router.get('/atributos')
-def get_agreement_dates_by_attributes(agreement_id: Optional[int], db: Session = Depends(get_db)):
+def get_agreement_dates_by_attributes(
+    agreement_id: Optional[int] = None,
+    data_assinatura: Optional[date] = None,
+    data_termino: Optional[date] = None,
+    data_publi_ce: Optional[date] = None,
+    data_publi_doe: Optional[date] = None,
+    db: Session = Depends(get_db)
+):
     try:
         query = select(AgreementDates)
         if agreement_id is not None:
             query = query.where(AgreementDates.agreement_id == agreement_id)
+        if data_assinatura is not None:
+            query = query.where(AgreementDates.data_assinatura == data_assinatura)
+        if data_termino is not None:
+            query = query.where(AgreementDates.data_termino == data_termino)
+        if data_publi_ce is not None:
+            query = query.where(AgreementDates.data_publi_ce == data_publi_ce)
+        if data_publi_doe is not None:
+            query = query.where(AgreementDates.data_publi_doe == data_publi_doe)
 
         agreement_dates = db.exec(query).all()
     except Exception as e:
@@ -127,13 +135,13 @@ def get_agreement_dates_by_attributes(agreement_id: Optional[int], db: Session =
     return agreement_dates
 
 @router.get('/quantidade')
-def get_agreement_dates_quantity(db: Session = Depends(get_db)):
+def get_agreement_dates_quantidade(db: Session = Depends(get_db)):
     try:
-        quantity = db.exec(select(func.count(AgreementDates.id))).one()
+        quantidade = db.exec(select(func.count(AgreementDates.id))).one()
     except Exception as e:
         logger.error(f"Erro ao buscar quantidade de datas dos convênios: {str(e)}")
         db.rollback()
-        raise HTTPException(status_code=500, detail="Erro ao buscar quantidade de datas dos convênios")
+        raise HTTPException(status_code=500, detail=f"Erro ao buscar quantidade de datas dos convênios: {str(e)}")
 
     logger.info('buscando quantidade de datas dos convênios')
     return {'quantidade de datas dos convênios': quantity}
