@@ -81,6 +81,7 @@ def get_agreement(agreement_id: int, db: Session = Depends(get_db)):
 def create_agreements(db: Session = Depends(get_db)):
     columns_agreements = ['codigo_plano_de_trabalho', 'concedente', 'convenente', 'objeto']
     columns_values = ['valor_inicial_total', 'valor_inicial_do_repasse_do_concedente', 'valor_inicial_da_contrapartida_do_convenente/beneficiario', 'valor_atualizado_total', 'valor_pago']
+    columns_dates = ['data_de_assinatura', 'data_de_término_após_aditivo/apostilamento', 'data_de_publicação_na_plataforma_ceará_transparente', 'data_publicação_no_doe']
     try:
         curr_dir = os.path.dirname(os.path.abspath(__file__))
         excel_file = os.path.join(curr_dir, "../data/Convênios 2007 - Setembro 2023.xlsx")
@@ -146,3 +147,119 @@ def delete_agreement(agreement_id: int, db: Session = Depends(get_db)):
     
     logger.info(f'deletando convênio {agreement_id}')
     return {"message": f"Convênio {agreement_id} deletado com sucesso"}
+
+@router.get('/atributos', description="Lista os atributos do modelo de convênios")
+def get_agreements_attributes(
+    codigo_plano_trabalho: Optional[str] = None,
+    concedente: Optional[str] = None,
+    convenente: Optional[str] = None,
+    objeto: Optional[str] = None,
+    db: Session = Depends(get_db)):
+    try:
+        query = select(Agreement)
+        if codigo_plano_trabalho is not None:
+            query = query.where(Agreement.codigo_plano_trabalho == codigo_plano_trabalho)
+        if concedente is not None:
+            query = query.where(func.lower(Agreement.concedente).contains(func.lower(concedente)))
+        if convenente is not None:
+            query = query.where(func.lower(Agreement.convenente).contains(func.lower(convenente)))
+        if objeto is not None:
+            query = query.where(Agreement.objeto == objeto)
+        
+        agreements = db.exec(query).all()
+    except Exception as e:
+        logger.error(f"Erro ao buscar convênios: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Erro ao buscar convênios")
+    
+    logger.info('buscando convênios com os atributos fornecidos')
+    result = [item.model_dump() for item in agreements]
+    return result
+
+@router.get('/quantity', description="Quantidade de convênios")
+def get_agreements_quantity(db: Session = Depends(get_db)):
+    try:
+        quantity = db.exec(select(func.count(Agreement.id))).one()
+    except Exception as e:
+        logger.error(f"Erro ao buscar quantidade de convênios: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Erro ao buscar quantidade de convênios")
+    
+    logger.info('buscando quantidade de convênios')
+    return {"quantidade de convenios": quantity}
+
+@router.get('/search/codigo_plano_trabalho', description='Faz uma pesquisa por palavra no código plano de trabalho de convênios')
+def get_search_codigo_plano_trabalho(word: str = Query(gt=4), db: Session = Depends(get_db)):
+    try:
+        data = db.exec(select(Agreement).where(func.lower(Agreement.codigo_plano_trabalho).contains(func.lower(word)))).all()
+    except Exception as e:
+        logger.error(f'Erro ao listar os convenios pelo codigo plano de trabalho. Erro: {str(e)}')
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f'Erro ao listar os convenios pelo codigo plano de trabalho. Erro: {str(e)}')
+    
+    return [
+        {
+            'id': item.id,
+            'codigo_plano_trabalho': item.codigo_plano_trabalho,
+            'concedente': item.concedente,
+            'convenente': item.convenente,
+            'objeto': item.objeto
+        } for item in data
+    ]
+
+@router.get('/search/concedente', description='Faz uma pesquisa por palavra no concedente de convênios')
+def get_search_concedente(word: str = Query(gt=4), db: Session = Depends(get_db)):
+    try:
+        data = db.exec(select(Agreement).where(func.lower(Agreement.concedente).contains(func.lower(word)))).all()
+    except Exception as e:
+        logger.error(f'Erro ao listar os convenios pelo concedente. Erro: {str(e)}')
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f'Erro ao listar os convenios pelo concedente. Erro: {str(e)}')
+    
+    return [
+        {
+            'id': item.id,
+            'codigo_plano_trabalho': item.codigo_plano_trabalho,
+            'concedente': item.concedente,
+            'convenente': item.convenente,
+            'objeto': item.objeto
+        } for item in data
+    ]
+
+@router.get('/search/convenente', description='Faz uma pesquisa por palavra no convenente de convênios')
+def get_search_convenente(word: str = Query(gt=4), db: Session = Depends(get_db)):
+    try:
+        data = db.exec(select(Agreement).where(func.lower(Agreement.convenente).contains(func.lower(word)))).all()
+    except Exception as e:
+        logger.error(f'Erro ao listar os convenios pelo convenente. Erro: {str(e)}')
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f'Erro ao listar os convenios pelo convenente. Erro: {str(e)}')
+    
+    return [
+        {
+            'id': item.id,
+            'codigo_plano_trabalho': item.codigo_plano_trabalho,
+            'concedente': item.concedente,
+            'convenente': item.convenente,
+            'objeto': item.objeto
+        } for item in data
+    ]
+
+@router.get('/search/objeto', description='Faz uma pesquisa por palavra no objeto de convênios')
+def get_search_objeto(word: str = Query(gt=4), db: Session = Depends(get_db)):
+    try:
+        data = db.exec(select(Agreement).where(func.lower(Agreement.objeto).contains(func.lower(word)))).all()
+    except Exception as e:
+        logger.error(f'Erro ao listar os convenios pelo objeto. Erro: {str(e)}')
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f'Erro ao listar os convenios pelo objeto. Erro: {str(e)}')
+    
+    return [
+        {
+            'id': item.id,
+            'codigo_plano_trabalho': item.codigo_plano_trabalho,
+            'concedente': item.concedente,
+            'convenente': item.convenente,
+            'objeto': item.objeto
+        } for item in data
+    ]
