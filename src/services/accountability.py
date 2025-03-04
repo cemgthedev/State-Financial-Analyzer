@@ -32,7 +32,8 @@ def update_accountability(accountability_id: int, new_data: Accountability, db: 
             setattr(accountability, key, value)
         
         db.commit()
-        return {"message": "Prestação de contas atualizada com sucesso"}
+        db.refresh(accountability)
+        return {"message": "Prestação de contas atualizada com sucesso", "data": accountability}
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Erro ao atualizar prestação de contas: {str(e)}")
@@ -61,17 +62,23 @@ def get_accountability(accountability_id: int, db: Session = Depends(get_db)):
     return accountability
 
 # Listagem das prestações de contas com paginação e filtros
-@router.get("/", response_model=List[Accountability], description="Lista as prestações de contas")
+@router.get("/", description="Lista as prestações de contas")
 def list_accountabilities(
     db: Session = Depends(get_db),
     page: Optional[int] = Query(default=1, ge=1, description="Página"),
     limit: Optional[int] = Query(default=100, ge=1, le=100, description="Quantidade por página"),
-    agreement_id: Optional[int] = Query(default=None, description="ID do convênio")
+    agreement_id: Optional[int] = Query(default=None, description="ID do convênio"),
+    status: Optional[str] = Query(default=None, description="Status da prestação de contas"),
+    report_type: Optional[str] = Query(default=None, description="Tipo de relatório")
 ):
     try:
         filters = []
         if agreement_id:
             filters.append(Accountability.agreement_id == agreement_id)
+        if status:
+            filters.append(Accountability.status == status)
+        if report_type:
+            filters.append(Accountability.report_type == report_type)
         
         offset = (page - 1) * limit
         stmt = select(Accountability).where(and_(*filters)).offset(offset).limit(limit)

@@ -73,24 +73,33 @@ def get_process(process_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Erro ao obter processo administrativo")
 
 # Listar processos administrativos com paginação e filtros
-@router.get("/", response_model=List[AdministrativeProcess], description="Lista os processos administrativos")
+@router.get("/", description="Lista os processos administrativos")
 def list_processes(
     db: Session = Depends(get_db),
     page: Optional[int] = Query(default=1, ge=1, description="Página de processos"),
     limit: Optional[int] = Query(default=100, ge=1, le=100, description="Quantidade de processos a serem retornados"),
-    contract_id: Optional[int] = Query(default=None, description="ID do contrato relacionado")
+    contract_id: Optional[int] = Query(default=None, description="ID do contrato relacionado"),
+    status: Optional[str] = Query(default=None, description="Status do processo"),
+    physical_situation: Optional[str] = Query(default=None, description="Situação física do processo"),
+    bidding_modality: Optional[str] = Query(default=None, description="Modalidade de licitação")
 ):
     try:
         filters = []
         if contract_id:
             filters.append(AdministrativeProcess.contract_id == contract_id)
+        if status:
+            filters.append(AdministrativeProcess.status == status)
+        if physical_situation:
+            filters.append(AdministrativeProcess.physical_situation == physical_situation)
+        if bidding_modality:
+            filters.append(AdministrativeProcess.bidding_modality == bidding_modality)
         
         offset = (page - 1) * limit
-        stmt = select(AdministrativeProcess).where(and_(*filters)).offset(offset).limit(limit) if filters else select(AdministrativeProcess).offset(offset).limit(limit)
+        stmt = select(AdministrativeProcess).where(and_(*filters)).offset(offset).limit(limit)
         processes = db.exec(stmt).all()
 
-        total_processes = db.exec(select(func.count()).select_from(AdministrativeProcess).where(and_(*filters))).first() if filters else db.exec(select(func.count()).select_from(AdministrativeProcess)).first()
-        total_pages = ceil(total_processes / limit)
+        total_processes = db.exec(select(func.count()).select_from(AdministrativeProcess).where(and_(*filters))).first()
+        total_pages = ceil(total_processes / limit) if total_processes else 1
         
         return {
             "message": "Processos Administrativos listados com sucesso",
