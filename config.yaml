@@ -1,2 +1,0 @@
-database:
-  url: "postgresql://usuario:12345678@localhost:5432/adm_conv"

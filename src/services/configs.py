@@ -1,9 +1,16 @@
+import os
 import logging
 import logging.config
 import yaml
 
+# Caminho absoluto para o diretório de logs
+log_directory = os.path.abspath(os.path.join(os.path.dirname(__file__), "../logs"))
+
+# Criar diretório de logs se não existir
+os.makedirs(log_directory, exist_ok=True)
+
 # Carregar configuração do arquivo YAML
-with open('./services/configs.logs.yaml', 'r') as file:
+with open(os.path.abspath(os.path.join(os.path.dirname(__file__), "configs.logs.yaml")), 'r') as file:
     config = yaml.safe_load(file)
     logging.config.dictConfig(config)
 

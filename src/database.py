@@ -8,7 +8,7 @@ with open("config.yaml", "r") as file:
 # Configuração da URL do banco de dados
 DATABASE_URL = config["database"]["url"]
 if DATABASE_URL is None:
-    DATABASE_URL = "postgresql://postgres:12345678@localhost:5432/sfa"
+    DATABASE_URL = "postgresql://postgres:12345678@localhost:5432/TrabFinal"
 
 # Criação do engine
 engine = create_engine(DATABASE_URL)
