@@ -79,26 +79,26 @@ def list_processes(
     page: Optional[int] = Query(default=1, ge=1, description="Página de processos"),
     limit: Optional[int] = Query(default=100, ge=1, le=100, description="Quantidade de processos a serem retornados"),
     contract_id: Optional[int] = Query(default=None, description="ID do contrato relacionado"),
-    status: Optional[str] = Query(default=None, description="Status do processo"),
-    physical_situation: Optional[str] = Query(default=None, description="Situação física do processo"),
-    bidding_modality: Optional[str] = Query(default=None, description="Modalidade de licitação")
+    status_do_instrumento: Optional[str] = Query(default=None, description="Status do processo"),
+    situacao_fisica: Optional[str] = Query(default=None, description="Situação física do processo"),
+    modalidade_de_licitacao: Optional[str] = Query(default=None, description="Modalidade de licitação")
 ):
     try:
         filters = []
         if contract_id:
             filters.append(AdministrativeProcess.contract_id == contract_id)
-        if status:
-            filters.append(AdministrativeProcess.status == status)
-        if physical_situation:
-            filters.append(AdministrativeProcess.physical_situation == physical_situation)
-        if bidding_modality:
-            filters.append(AdministrativeProcess.bidding_modality == bidding_modality)
+        if status_do_instrumento:
+            filters.append(AdministrativeProcess.status_do_instrumento == status_do_instrumento)
+        if situacao_fisica:
+            filters.append(AdministrativeProcess.situacao_fisica == situacao_fisica)
+        if modalidade_de_licitacao:
+            filters.append(AdministrativeProcess.modalidade_de_licitacao == modalidade_de_licitacao)
         
         offset = (page - 1) * limit
-        stmt = select(AdministrativeProcess).where(and_(*filters)).offset(offset).limit(limit)
+        stmt = select(AdministrativeProcess).where(and_(*filters)).offset(offset).limit(limit) if filters else select(AdministrativeProcess).offset(offset).limit(limit)
         processes = db.exec(stmt).all()
 
-        total_processes = db.exec(select(func.count()).select_from(AdministrativeProcess).where(and_(*filters))).first()
+        total_processes = db.exec(select(func.count()).select_from(AdministrativeProcess).where(and_(*filters))).first() if filters else db.exec(select(func.count()).select_from(AdministrativeProcess)).first()
         total_pages = ceil(total_processes / limit) if total_processes else 1
         
         return {
