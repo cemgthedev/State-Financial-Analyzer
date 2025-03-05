@@ -2,9 +2,9 @@ from math import ceil
 import os
 import pandas as pd
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from pandas import read_excel
-from sqlmodel import Session, and_, select
+from sqlmodel import Session, and_, extract, select
 from sqlalchemy.sql import func
 from unidecode import unidecode
 from database import get_db
@@ -17,6 +17,9 @@ from services.configs import contract_values_logger as logger_values
 from services.configs import contract_dates_logger as logger_dates
 from services.configs import administrative_processes_logger as logger_processes
 from utils.convert_date import convert_date
+import matplotlib.pyplot as plt
+import io
+import base64
 
 # Criar roteador
 router = APIRouter(prefix="/contracts", tags=["Contracts"])
@@ -142,7 +145,7 @@ def delete_contract(contract_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Erro ao excluir contrato")
     
 # Busca um contrato pelo id
-@router.get("/{contract_id}", response_model=Contract, description="Obtém um contrato")
+@router.get("/contract/{contract_id}", response_model=Contract, description="Obtém um contrato")
 def get_contract(contract_id: int, db: Session = Depends(get_db)):
     try:
         logger.info(f'Buscando contrato pelo id {contract_id}')
@@ -210,3 +213,76 @@ def list_contracts(
         logger.error(f"Erro ao listar contratos: {str(e)}")
         db.rollback()
         raise HTTPException(status_code=500, detail="Erro ao listar contratos")
+
+'''
+    Rotas complexas de contratos
+'''
+
+# Distribuição de contratos por modalidade
+@router.get("/distribution-modality")
+def distribuicao_contratos_por_modalidade(db: Session = Depends(get_db)):
+    stmt = (
+        select(AdministrativeProcess.modalidade_de_licitacao, 
+               func.count(Contract.id))
+        .join(Contract, Contract.id == AdministrativeProcess.contract_id)
+        .group_by(AdministrativeProcess.modalidade_de_licitacao)
+        .order_by(func.count(Contract.id).desc())
+    )
+    
+    result = db.exec(stmt).all()
+    
+    if not result:
+        return {"message": "Nenhum contrato encontrado"}
+    
+    modalidades, contagens = zip(*result)
+    top_modalidades = list(modalidades[:5])
+    top_contagens = list(contagens[:5])
+    
+    if len(modalidades) > 5:
+        outras_contagens = sum(contagens[5:])
+        top_modalidades.append("Outras")
+        top_contagens.append(outras_contagens)
+    
+    plt.figure(figsize=(8, 8))
+    plt.pie(top_contagens, labels=top_modalidades, autopct="%1.1f%%", startangle=140)
+    plt.title("Distribuição dos Contratos por Modalidade de Licitação")
+    
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
+    plt.close()
+    buf.seek(0)
+    
+    return Response(content=buf.getvalue(), media_type="image/png")
+
+# Evolução da média de valor pago ao longo dos anos
+@router.get("/contract-payment-evolution")
+def evolucao_valor_pago(db: Session = Depends(get_db)):
+    stmt = (
+        select(extract('year', ContractDates.data_de_assinatura).label("ano"), 
+               func.avg(ContractValues.valor_pago))
+        .join(Contract, Contract.id == ContractValues.contract_id)
+        .join(ContractDates, Contract.id == ContractDates.contract_id)
+        .group_by("ano")
+        .order_by("ano")
+    )
+    
+    result = db.exec(stmt).all()
+    
+    if not result:
+        return {"message": "Nenhum dado encontrado"}
+    
+    anos, valores = zip(*result)
+    anos = [str(ano) for ano in anos]
+    
+    plt.figure(figsize=(10, 6))
+    plt.plot(anos, valores, marker='o', linestyle='-', color='blue')
+    plt.xlabel("Ano")
+    plt.ylabel("Média do Valor Pago")
+    plt.title("Evolução da Média do Valor Pago de Contratos ao Longo dos Anos")
+    
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
+    plt.close()
+    buf.seek(0)
+    
+    return Response(content=buf.getvalue(), media_type="image/png")
