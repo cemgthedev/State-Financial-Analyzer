@@ -1,5 +1,6 @@
 from math import ceil
 import os
+import pandas as pd
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pandas import read_excel
@@ -7,10 +8,15 @@ from sqlmodel import Session, and_, select
 from sqlalchemy.sql import func
 from unidecode import unidecode
 from database import get_db
+from models.administrative_process import AdministrativeProcess
 from models.contract import Contract
+from models.contract_dates import ContractDates
 from models.contract_values import ContractValues
 from services.configs import contracts_logger as logger
 from services.configs import contract_values_logger as logger_values
+from services.configs import contract_dates_logger as logger_dates
+from services.configs import administrative_processes_logger as logger_processes
+from utils.convert_date import convert_date
 
 # Criar roteador
 router = APIRouter(prefix="/contracts", tags=["Contracts"])
@@ -20,6 +26,9 @@ router = APIRouter(prefix="/contracts", tags=["Contracts"])
 def create_contracts(db: Session = Depends(get_db)):
     columns_contracts = ['numero_contrato', 'cpf/cnpj', 'contratante', 'contratado', 'tipo_objeto', 'objeto']
     columns_values = ['valor_original', 'valor_aditivo', 'valor_atualizado', 'valor_empenhado', 'valor_pago']
+    columns_dates = ['data_de_assinatura', 'data_de_termino_original', 'data_de_termino_apos_aditivo', 'data_de_rescisao', 'data_publicacao_no_doe']
+    columns_admnistrative_process = ['no_do_processo_-_spu', 'modalidade_de_licitacao', 'justificativa', 'status_str', 'situacao_fisica']
+    
     try:
         curr_dir = os.path.dirname(os.path.abspath(__file__))
         data_dir = os.path.join(curr_dir, "../data")
@@ -35,10 +44,14 @@ def create_contracts(db: Session = Depends(get_db)):
             excel_file = os.path.join(data_dir, file)
             df = read_excel(excel_file)
             df.columns = [unidecode(col.lower().replace(' ', '_')) for col in df.columns]
+            df = df.where(pd.notna(df), None)
             
             data_contract = [df[col] for col in columns_contracts if col in df.columns]
             data_values = [df[col] for col in columns_values if col in df.columns]
-            for num, cpf_cnpj, cont, cond, tip, obj, vo, va, vat, ve, vp in zip(*data_contract, *data_values):
+            data_dates = [df[col] for col in columns_dates if col in df.columns]
+            data_admnistrative_process = [df[col] for col in columns_admnistrative_process if col in df.columns]
+            
+            for num, cpf_cnpj, cont, cond, tip, obj, vo, va, vat, ve, vp, da, dto, dta, dr, dp, np, ml, j, si, sf in zip(*data_contract, *data_values, *data_dates, *data_admnistrative_process):
                 # Cria os contratos
                 contract = Contract(numero_contrato=num, cpf_cnpj=cpf_cnpj, contratante=cont, contratado=cond, tipo_objeto=tip, objeto=obj)
                 db.add(contract)
@@ -52,6 +65,27 @@ def create_contracts(db: Session = Depends(get_db)):
                 db.commit()
                 db.refresh(contract_value)
                 logger_values.info(f'Criando valor de contrato {contract_value.id}')
+                
+                # Converte datas
+                da = convert_date(da) if da else None
+                dto = convert_date(dto) if dto else None
+                dta = convert_date(dta) if dta else None
+                dr = convert_date(dr) if dr else None
+                dp = convert_date(dp) if dp else None
+                
+                # Cria as datas dos contratos
+                contract_date = ContractDates(contract_id=contract.id, data_de_assinatura=da, data_de_termino_original=dto, data_de_termino_apos_aditivo=dta, data_de_rescisao=dr, data_publicacao_no_doe=dp)
+                db.add(contract_date)
+                db.commit()
+                db.refresh(contract_date)
+                logger_dates.info(f'Criando data de contrato {contract_date.id}')
+                
+                # Cria os processos administrativos dos contratos
+                contract_process = AdministrativeProcess(contract_id=contract.id, n_do_processo_spu=np, modalidade_de_licitacao=ml, justificativa=j, status_do_instrumento=si, situacao_fisica=sf)
+                db.add(contract_process)
+                db.commit()
+                db.refresh(contract_process)
+                logger_processes.info(f'Criando processo administrativo de contrato {contract_process.id}')
         
         logger.info('Contratos criados com sucesso')
         return {"message": "Contratos criados com sucesso"}
