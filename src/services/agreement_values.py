@@ -119,6 +119,18 @@ def delete_agreement_value(agreement_value_id: int, db: Session = Depends(get_db
     logger.info(f'deletando valor de convênio {agreement_value_id}')
     return {"message": f"Valor de convênio {agreement_value_id} deletado com sucesso"}
 
+@router.get('/count', description="Retorna a quantidade de valores de convênios")
+def count_agreement_values(db: Session = Depends(get_db)):
+    try:
+        count = db.exec(select(func.count(AgreementValues.id))).one()
+    except Exception as e:
+        logger.error(f"Erro ao contar valores dos convênios: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Erro ao contar valores dos convênios")
+        
+    logger.info('contando a quantidade de valores dos convênios')
+    return {"quantidade": count}
+
 @router.get('/atributos', description="Lista os atributos do modelo de valores de convênios")
 def get_agreement_values_attributes(
     agreement_id: Optional[int],
@@ -151,18 +163,6 @@ def get_agreement_values_attributes(
     logger.info('buscando valores dos convênios com os atributos fornecidos')
     result = [item.model_dump() for item in agreement_values]
     return result
-
-@router.get('/quantity', description="Quantidade de valores de convênios")
-def get_agreement_values_quantity(db: Session = Depends(get_db)):
-    try:
-        quantity = db.exec(select(func.count(AgreementValues.id))).one()        
-    except Exception as e:
-        logger.error(f"Erro ao buscar quantidade de valores dos convênios: {str(e)}")
-        db.rollback()
-        raise HTTPException(status_code=500, detail="Erro ao buscar quantidade de valores dos convênios")
-    
-    logger.info('buscando quantidade de valores dos convênios')
-    return {'quantidade de valores dos convênios': quantity}
 
 @router.get('/search/valor_inicial_total', description='Faz uma pesquisa por valor inicial total de convênios')
 def get_search_valor_inicial_total(min_value: Optional[float] = None, max_value: Optional[float] = None, db: Session = Depends(get_db)):
