@@ -12,4 +12,4 @@ class Accountability(SQLModel, table=True):
     report_type: str = Field(description="Tipo de prestação de contas")  # Ex: 'Parcial' ou 'Final'
     notes: str = Field(default=None, description="Notas adicionais")  # Informações complementares
 
-    agreement: "Agreement" = Relationship(back_populates='account', cascade='all, delete-orphan')
+    agreement: "Agreement" = Relationship(back_populates='account')

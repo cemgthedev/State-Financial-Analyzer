@@ -11,4 +11,4 @@ class AgreementDates(SQLModel, table=True):
     data_publi_ce: date = Field(nullable=True)  # Data de publicação no CE (pode ser nula)
     data_publi_doe: date = Field(nullable=True)  # Data de publicação no DOE (pode ser nula)
 
-    agreement: "Agreement" = Relationship(back_populates="dates", cascade='all, delete-orphan')  # Relacionamento com Agreement
+    agreement: "Agreement" = Relationship(back_populates="dates")  # Relacionamento com Agreement
