@@ -326,3 +326,38 @@ def comparacao_valores_contratos(db: Session = Depends(get_db)):
     buf.seek(0)
     
     return Response(content=buf.getvalue(), media_type="image/png")
+
+# Distribuição de contratos por situação física dos processos administrativos
+@router.get("/regularized-contracts")
+def percentual_contratos_regularizados(db: Session = Depends(get_db)):
+    stmt = (
+        select(AdministrativeProcess.situacao_fisica, func.count(Contract.id))
+        .join(Contract, Contract.id == AdministrativeProcess.contract_id)
+        .group_by(AdministrativeProcess.situacao_fisica)
+    )
+    
+    result = db.exec(stmt).all()
+    
+    if not result:
+        return {"message": "Nenhum dado encontrado"}
+    
+    situacoes, contagens = zip(*result)
+    top_situacoes = list(situacoes[:5])
+    top_contagens = list(contagens[:5])
+    
+    if len(situacoes) > 5:
+        outras_contagens = sum(contagens[5:])
+        top_situacoes.append("Outras")
+        top_contagens.append(outras_contagens)
+    
+    plt.figure(figsize=(8, 8))
+    plt.pie(top_contagens, labels=top_situacoes, autopct="%1.1f%%", startangle=140)
+    plt.title("Distribuição dos Contratos por Situação Física dos Processos Administrativos")
+    plt.tight_layout()
+    
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
+    plt.close()
+    buf.seek(0)
+    
+    return Response(content=buf.getvalue(), media_type="image/png")
