@@ -148,6 +148,18 @@ def delete_agreement(agreement_id: int, db: Session = Depends(get_db)):
     logger.info(f'deletando convênio {agreement_id}')
     return {"message": f"Convênio {agreement_id} deletado com sucesso"}
 
+@router.get('/count', description="Retorna a quantidade de convênios")
+def count_agreements(db: Session = Depends(get_db)):
+    try:
+        quantity = db.exec(select(func.count(Agreement.id))).one()
+    except Exception as e:
+        logger.error(f"Erro ao buscar quantidade de convênios: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Erro ao buscar quantidade de convênios")
+    
+    logger.info('buscando quantidade de convênios')
+    return {"quantidade": quantity}
+
 @router.get('/atributos', description="Lista os atributos do modelo de convênios")
 def get_agreements_attributes(
     codigo_plano_trabalho: Optional[str] = None,
@@ -175,18 +187,6 @@ def get_agreements_attributes(
     logger.info('buscando convênios com os atributos fornecidos')
     result = [item.model_dump() for item in agreements]
     return result
-
-@router.get('/quantity', description="Quantidade de convênios")
-def get_agreements_quantity(db: Session = Depends(get_db)):
-    try:
-        quantity = db.exec(select(func.count(Agreement.id))).one()
-    except Exception as e:
-        logger.error(f"Erro ao buscar quantidade de convênios: {str(e)}")
-        db.rollback()
-        raise HTTPException(status_code=500, detail="Erro ao buscar quantidade de convênios")
-    
-    logger.info('buscando quantidade de convênios')
-    return {"quantidade de convenios": quantity}
 
 @router.get('/search/codigo_plano_trabalho', description='Faz uma pesquisa por palavra no código plano de trabalho de convênios')
 def get_search_codigo_plano_trabalho(word: str = Query(gt=4), db: Session = Depends(get_db)):
