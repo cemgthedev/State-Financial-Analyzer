@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Optional
+from sqlalchemy import desc
 from sqlmodel import Session, and_, select
 from sqlalchemy.sql import func
 from database import get_db
 from models.accountability import Accountability
 from math import ceil
+from services.configs import accountability_logger as logger
+from models.agreement import Agreement
 
 router = APIRouter(prefix="/accountability", tags=["Accountability"])
 
@@ -98,3 +101,29 @@ def list_accountabilities(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Erro ao listar prestações de contas: {str(e)}")
+
+
+@router.get('/per_status', description='Retorna os convênios pela sua situação em prestação de contas')
+def get_per_status(db: Session = Depends(get_db)):
+    try:
+        data = db.exec(
+            select(Agreement, Accountability.status.label('categoria'), func.count(Agreement.id).label('qntd_categoria'))
+            .join(Accountability)
+            .group_by(Accountability.status)
+            .order_by(desc(func.count(Agreement.id)))
+        ).all()
+        
+        logger.info('Listando os convênios pelo status da prestação de contas')
+    except Exception as e:
+        logger.error(f'Erro ao retornar os convênios. Erro: {str(e)}')
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f'Erro ao retornar os convênios. Erro: {str(e)}')
+    
+    result = []
+    for agreement, status, count in data:
+        result.append({
+            "status": status,
+            "qntd_status": count
+            "convenio": agreement.dict(),
+        })
+    return result

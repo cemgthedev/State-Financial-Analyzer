@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 from sqlalchemy.sql import func
 from database import get_db
+from models.agreement_dates import AgreementDates
 from models.agreement_values import AgreementValues
 from services.configs import agreement_values_logger as logger
 
@@ -298,3 +299,26 @@ def get_search_valor_pago(min_value: Optional[float] = None, max_value: Optional
         } for item in data
     ]
 
+@router.get('/compare_values', description='Compara os valores iniciais com os valores atualizados de convênios por ano')
+def get_compare_values(db: Session = Depends(get_db)):
+    try:
+        data = db.exec(
+            select(func.extract('year', AgreementDates.data_assinatura).label('ano'),
+                   func.sum(AgreementValues.valor_inicial_total).label('soma_valores_originais'),
+                   func.sum(AgreementValues.valor_atualizado_total).label('soma_valores_atualizados'))
+            .join(AgreementDates, AgreementValues.agreement_id == AgreementDates.agreement_id)
+            .group_by(func.extract('year', AgreementDates.data_assinatura))
+            .order_by(func.extract('year', AgreementDates.data_assinatura))
+        ).all()
+    except Exception as e:
+        logger.error(f'Erro ao comparar os valores dos convênios. Erro: {str(e)}')
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f'Erro ao comparar os valores dos convênios. Erro: {str(e)}')
+    
+    return [
+        {
+            'ano': item.ano,
+            'soma_valores_originais': item.soma_valores_originais,
+            'soma_valores_atualizados': item.soma_valores_atualizados
+        } for item in data
+    ]

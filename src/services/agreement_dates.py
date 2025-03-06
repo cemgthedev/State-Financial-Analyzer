@@ -1,10 +1,12 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlmodel import Session, select, func
+from sqlmodel import Session, asc, select, func
 from database import get_db
+from models.agreement import Agreement
 from models.agreement_dates import AgreementDates
-from services.configs import agreement_values_logger as logger
+from services.configs import agreement_dates_logger as logger
 from datetime import date
+from models.agreement_values import AgreementValues
 
 # Criar roteador para AgreementDates
 router = APIRouter(prefix="/agreement_dates", tags=["Agreement Dates"])
@@ -137,7 +139,7 @@ def get_agreement_dates_by_attributes(
 @router.get('/quantidade')
 def get_agreement_dates_quantidade(db: Session = Depends(get_db)):
     try:
-        quantidade = db.exec(select(func.count(AgreementDates.id))).one()
+        quantity = db.exec(select(func.count(AgreementDates.id))).one()
     except Exception as e:
         logger.error(f"Erro ao buscar quantidade de datas dos convênios: {str(e)}")
         db.rollback()
@@ -145,3 +147,27 @@ def get_agreement_dates_quantidade(db: Session = Depends(get_db)):
 
     logger.info('buscando quantidade de datas dos convênios')
     return {'quantidade de datas dos convênios': quantity}
+
+@router.get('/values_per_year', description='Exibe a evolução do valor pago de convênios ao longo dos anos')
+def get_values_per_year(db: Session = Depends(get_db)):
+    try:
+        data = db.exec(
+            select(func.extract('year', AgreementDates.data_assinatura).label('ano') ,func.sum(AgreementValues.valor_pago).label('valor_pago_ano'))
+            .join(AgreementDates, AgreementDates.id == AgreementValues.agreement_id)
+            .group_by(func.extract('year', AgreementDates.data_assinatura))
+            .order_by(asc(func.extract('year', AgreementDates.data_assinatura)))
+        ).all()
+        
+        logger.info('Buscando a soma dos valores pagos por ano')
+    except Exception as e:
+        logger.erro(f'Erro ao retornar as soma de valores pagos por ano. Erro: {str(e)}')
+        db.rollback()
+        HTTPException(status_code=500, detail=f'Erro ao retornar as soma de valores pagos por ano. Erro: {str(e)}')
+        
+    return [
+        {
+            "ano": int(item.ano),
+            "valor_pago_ano": float(item.valor_pago_ano)
+        }
+        for item in data
+    ]
