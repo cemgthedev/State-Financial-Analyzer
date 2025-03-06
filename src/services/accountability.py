@@ -123,7 +123,7 @@ def get_per_status(db: Session = Depends(get_db)):
     for agreement, status, count in data:
         result.append({
             "status": status,
-            "qntd_status": count
+            "qntd_status": count,
             "convenio": agreement.dict(),
         })
     return result
