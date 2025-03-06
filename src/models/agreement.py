@@ -10,3 +10,5 @@ class Agreement(SQLModel, table=True):
     objeto: str = Field(default=None)
     
     values: "AgreementValues" = Relationship(back_populates="agreement", cascade_delete=True)  # Relationship with AgreementValues
+    account: "Accountability" = Relationship(back_populates="agreement", cascade_delete=True) # Relationship with Accountability
+    dates: "AgreementDates" = Relationship(back_populates='agreement', cascade_delete=True) # Relationship with AgreementDates
