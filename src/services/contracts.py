@@ -286,3 +286,78 @@ def evolucao_valor_pago(db: Session = Depends(get_db)):
     buf.seek(0)
     
     return Response(content=buf.getvalue(), media_type="image/png")
+
+# Comparação da média de valores originais e atualizados ao longo dos anos
+@router.get("/contract-values-comparison")
+def comparacao_valores_contratos(db: Session = Depends(get_db)):
+    stmt = (
+        select(extract('year', ContractDates.data_de_assinatura).label("ano"), 
+               func.avg(ContractValues.valor_original), 
+               func.avg(ContractValues.valor_atualizado))
+        .join(Contract, Contract.id == ContractValues.contract_id)
+        .join(ContractDates, Contract.id == ContractDates.contract_id)
+        .group_by("ano")
+        .order_by("ano")
+    )
+    
+    result = db.exec(stmt).all()
+    
+    if not result:
+        return {"message": "Nenhum dado encontrado"}
+    
+    anos, valores_originais, valores_atualizados = zip(*result)
+    
+    plt.figure(figsize=(10, 6))
+    width = 0.4
+    indices = range(len(anos))
+    
+    plt.bar(indices, valores_originais, width=width, label="Valor Original", color='blue', alpha=0.7)
+    plt.bar([i + width for i in indices], valores_atualizados, width=width, label="Valor Atualizado", color='red', alpha=0.7)
+    
+    plt.xlabel("Ano")
+    plt.ylabel("Valores (R$)")
+    plt.title("Comparação entre Valores Originais e Atualizados de Contratos")
+    plt.xticks([i + width / 2 for i in indices], anos)
+    plt.legend()
+    
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
+    plt.close()
+    buf.seek(0)
+    
+    return Response(content=buf.getvalue(), media_type="image/png")
+
+# Distribuição de contratos por situação física dos processos administrativos
+@router.get("/regularized-contracts")
+def percentual_contratos_regularizados(db: Session = Depends(get_db)):
+    stmt = (
+        select(AdministrativeProcess.situacao_fisica, func.count(Contract.id))
+        .join(Contract, Contract.id == AdministrativeProcess.contract_id)
+        .group_by(AdministrativeProcess.situacao_fisica)
+    )
+    
+    result = db.exec(stmt).all()
+    
+    if not result:
+        return {"message": "Nenhum dado encontrado"}
+    
+    situacoes, contagens = zip(*result)
+    top_situacoes = list(situacoes[:5])
+    top_contagens = list(contagens[:5])
+    
+    if len(situacoes) > 5:
+        outras_contagens = sum(contagens[5:])
+        top_situacoes.append("Outras")
+        top_contagens.append(outras_contagens)
+    
+    plt.figure(figsize=(8, 8))
+    plt.pie(top_contagens, labels=top_situacoes, autopct="%1.1f%%", startangle=140)
+    plt.title("Distribuição dos Contratos por Situação Física dos Processos Administrativos")
+    plt.tight_layout()
+    
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
+    plt.close()
+    buf.seek(0)
+    
+    return Response(content=buf.getvalue(), media_type="image/png")
