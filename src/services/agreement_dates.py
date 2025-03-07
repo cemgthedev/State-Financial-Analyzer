@@ -197,7 +197,7 @@ def get_values_per_year(db: Session = Depends(get_db)):
     try:
         data = db.exec(
             select(func.extract('year', AgreementDates.data_assinatura).label('ano') ,func.sum(AgreementValues.valor_pago).label('valor_pago_ano'))
-            .join(AgreementDates, AgreementDates.id == AgreementValues.agreement_id)
+            .join(AgreementDates, AgreementDates.agreement_id == AgreementValues.agreement_id)
             .group_by(func.extract('year', AgreementDates.data_assinatura))
             .order_by(asc(func.extract('year', AgreementDates.data_assinatura)))
         ).all()
