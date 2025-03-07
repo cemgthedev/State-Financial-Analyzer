@@ -25,7 +25,7 @@ def list_agreement_values(db: Session = Depends(get_db)):
     return result
 
 # Listar valores de convênios paginado
-@router.get("/pagination", description="Lista os valores dos convênios com paginação")
+@router.get("/pagination/", description="Lista os valores dos convênios com paginação")
 def list_agreement_values_paginated(page: Optional[int] = Query(1, gt=0), length: Optional[int] = Query(100, gt=0), db: Session = Depends(get_db)):
     try:
         agreement_values = db.exec(select(AgreementValues).offset((page - 1) * length).limit(length)).all()
@@ -119,7 +119,7 @@ def delete_agreement_value(agreement_value_id: int, db: Session = Depends(get_db
     logger.info(f'deletando valor de convênio {agreement_value_id}')
     return {"message": f"Valor de convênio {agreement_value_id} deletado com sucesso"}
 
-@router.get('/count', description="Retorna a quantidade de valores de convênios")
+@router.get('/count/', description="Retorna a quantidade de valores de convênios")
 def count_agreement_values(db: Session = Depends(get_db)):
     try:
         count = db.exec(select(func.count(AgreementValues.id))).one()
@@ -131,7 +131,7 @@ def count_agreement_values(db: Session = Depends(get_db)):
     logger.info('contando a quantidade de valores dos convênios')
     return {"quantidade": count}
 
-@router.get('/atributos', description="Lista os atributos do modelo de valores de convênios")
+@router.get('/atributos/', description="Lista os atributos do modelo de valores de convênios")
 def get_agreement_values_attributes(
     agreement_id: Optional[int],
     valor_inicial_total: Optional[float],
@@ -164,7 +164,7 @@ def get_agreement_values_attributes(
     result = [item.model_dump() for item in agreement_values]
     return result
 
-@router.get('/search/valor_inicial_total', description='Faz uma pesquisa por valor inicial total de convênios')
+@router.get('/search/valor_inicial_total/', description='Faz uma pesquisa por valor inicial total de convênios')
 def get_search_valor_inicial_total(min_value: Optional[float] = None, max_value: Optional[float] = None, db: Session = Depends(get_db)):
     try:
         query = select(AgreementValues)
@@ -173,7 +173,7 @@ def get_search_valor_inicial_total(min_value: Optional[float] = None, max_value:
         if max_value is not None:
             query = query.where(AgreementValues.valor_inicial_total <= max_value)
         
-        data = db.exec(query).all()
+        data = db.exec(query.order_by(AgreementValues.id)).all()
     except Exception as e:
         logger.error(f'Erro ao listar os valores de convênios pelo valor inicial total. Erro: {str(e)}')
         db.rollback()
@@ -191,7 +191,7 @@ def get_search_valor_inicial_total(min_value: Optional[float] = None, max_value:
         } for item in data
     ]
 
-@router.get('/search/valor_inicial_repasse_concedente', description='Faz uma pesquisa por valor inicial repasse concedente de convênios')
+@router.get('/search/valor_inicial_repasse_concedente/', description='Faz uma pesquisa por valor inicial repasse concedente de convênios')
 def get_search_valor_inicial_repasse_concedente(min_value: Optional[float] = None, max_value: Optional[float] = None, db: Session = Depends(get_db)):
     try:
         query = select(AgreementValues)
@@ -200,7 +200,7 @@ def get_search_valor_inicial_repasse_concedente(min_value: Optional[float] = Non
         if max_value is not None:
             query = query.where(AgreementValues.valor_inicial_repasse_concedente <= max_value)
         
-        data = db.exec(query).all()
+        data = db.exec(query.order_by(AgreementValues.id)).all()
     except Exception as e:
         logger.error(f'Erro ao listar os valores de convênios pelo valor inicial repasse concedente. Erro: {str(e)}')
         db.rollback()
@@ -218,7 +218,7 @@ def get_search_valor_inicial_repasse_concedente(min_value: Optional[float] = Non
         } for item in data
     ]
 
-@router.get('/search/valor_inicial_contrapartida_convenente', description='Faz uma pesquisa por valor inicial contrapartida convenente de convênios')
+@router.get('/search/valor_inicial_contrapartida_convenente/', description='Faz uma pesquisa por valor inicial contrapartida convenente de convênios')
 def get_search_valor_inicial_contrapartida_convenente(min_value: Optional[float] = None, max_value: Optional[float] = None, db: Session = Depends(get_db)):
     try:
         query = select(AgreementValues)
@@ -227,7 +227,7 @@ def get_search_valor_inicial_contrapartida_convenente(min_value: Optional[float]
         if max_value is not None:
             query = query.where(AgreementValues.valor_inicial_contrapartida_convenente <= max_value)
         
-        data = db.exec(query).all()
+        data = db.exec(query.order_by(AgreementValues.id)).all()
     except Exception as e:
         logger.error(f'Erro ao listar os valores de convênios pelo valor inicial contrapartida convenente. Erro: {str(e)}')
         db.rollback()
@@ -245,7 +245,7 @@ def get_search_valor_inicial_contrapartida_convenente(min_value: Optional[float]
         } for item in data
     ]
 
-@router.get('/search/valor_atualizado_total', description='Faz uma pesquisa por valor atualizado total de convênios')
+@router.get('/search/valor_atualizado_total/', description='Faz uma pesquisa por valor atualizado total de convênios')
 def get_search_valor_atualizado_total(min_value: Optional[float] = None, max_value: Optional[float] = None, db: Session = Depends(get_db)):
     try:
         query = select(AgreementValues)
@@ -254,7 +254,7 @@ def get_search_valor_atualizado_total(min_value: Optional[float] = None, max_val
         if max_value is not None:
             query = query.where(AgreementValues.valor_atualizado_total <= max_value)
         
-        data = db.exec(query).all()
+        data = db.exec(query.order_by(AgreementValues.id)).all()
     except Exception as e:
         logger.error(f'Erro ao listar os valores de convênios pelo valor atualizado total. Erro: {str(e)}')
         db.rollback()
@@ -272,7 +272,7 @@ def get_search_valor_atualizado_total(min_value: Optional[float] = None, max_val
         } for item in data
     ]
 
-@router.get('/search/valor_pago', description='Faz uma pesquisa por valor pago de convênios')
+@router.get('/search/valor_pago/', description='Faz uma pesquisa por valor pago de convênios')
 def get_search_valor_pago(min_value: Optional[float] = None, max_value: Optional[float] = None, db: Session = Depends(get_db)):
     try:
         query = select(AgreementValues)
@@ -281,7 +281,7 @@ def get_search_valor_pago(min_value: Optional[float] = None, max_value: Optional
         if max_value is not None:
             query = query.where(AgreementValues.valor_pago <= max_value)
         
-        data = db.exec(query).all()
+        data = db.exec(query.order_by(AgreementValues.id)).all()
     except Exception as e:
         logger.error(f'Erro ao listar os valores de convênios pelo valor pago. Erro: {str(e)}')
         db.rollback()
@@ -299,7 +299,7 @@ def get_search_valor_pago(min_value: Optional[float] = None, max_value: Optional
         } for item in data
     ]
 
-@router.get('/compare_values', description='Compara os valores iniciais com os valores atualizados de convênios por ano')
+@router.get('/compare_values/', description='Compara os valores iniciais com os valores atualizados de convênios por ano')
 def get_compare_values(db: Session = Depends(get_db)):
     try:
         data = db.exec(
