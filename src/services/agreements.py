@@ -15,6 +15,8 @@ from pandas import read_excel
 from unidecode import unidecode
 import os
 from datetime import datetime
+
+from utils.safe_parse_date import safe_parse_date
 # Criar roteador
 router = APIRouter(prefix="/agreements", tags=["Agreements"])
 
@@ -89,8 +91,9 @@ def create_agreements(db: Session = Depends(get_db)):
     try:
         curr_dir = os.path.dirname(os.path.abspath(__file__))
         excel_file = os.path.join(curr_dir, "../data/Convênios 2007 - Setembro 2023.xlsx")
-        df = read_excel(excel_file, keep_default_na=False, na_values=[""])
+        df = read_excel(excel_file)
         df.columns = [unidecode(col.lower().replace(' ', '_')) for col in df.columns]
+        df = df.where(pd.notna(df), None)
         
         data_agreement = [df[col] for col in columns_agreements if col in df.columns]
         data_values = [df[col] for col in columns_values if col in df.columns]
@@ -109,16 +112,16 @@ def create_agreements(db: Session = Depends(get_db)):
             db.refresh(agreement_value)
             logger_values.info(f'criando valor de convênio {agreement_value.id}')
             # Cria as datas dos convênios
-            data_assinatura = pd.to_datetime(das).date() if pd.notna(pd.to_datetime(das, errors='coerce')) else None
-            data_termino = pd.to_datetime(dta).date() if pd.notna(pd.to_datetime(dta, errors='coerce')) else None
-            data_publi_ce = pd.to_datetime(dpc).date() if pd.notna(pd.to_datetime(dpc, errors='coerce')) else None
-            data_publi_doe = pd.to_datetime(dpd).date() if pd.notna(pd.to_datetime(dpd, errors='coerce')) else None
+            data_assinatura = safe_parse_date(das)
+            data_termino = safe_parse_date(dta)
+            data_publi_ce = safe_parse_date(dpc)
+            data_publi_doe = safe_parse_date(dpd)
             agreement_date = AgreementDates(
                 agreement_id=agreement.id,
-                data_assinatura=data_assinatura if data_assinatura != pd.NaT else None,
-                data_termino=data_termino if data_termino != pd.NaT else None,
-                data_publi_ce=data_publi_ce if data_publi_ce != pd.NaT else None,
-                data_publi_doe=data_publi_doe if data_publi_doe != pd.NaT else None
+                data_assinatura=data_assinatura,
+                data_termino=data_termino,
+                data_publi_ce=data_publi_ce,
+                data_publi_doe=data_publi_doe
             )
             db.add(agreement_date)
             db.commit()
