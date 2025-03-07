@@ -109,10 +109,10 @@ def create_agreements(db: Session = Depends(get_db)):
             db.refresh(agreement_value)
             logger_values.info(f'criando valor de convênio {agreement_value.id}')
             # Cria as datas dos convênios
-            data_assinatura = pd.to_datetime(das).date() if pd.notna(das) and pd.to_datetime(das, errors='coerce') != pd.NaT else None
-            data_termino = pd.to_datetime(dta).date() if pd.notna(dta) and pd.to_datetime(dta, errors='coerce') != pd.NaT else None
-            data_publi_ce = pd.to_datetime(dpc).date() if pd.notna(dpc) and pd.to_datetime(dpc, errors='coerce') != pd.NaT else None
-            data_publi_doe = pd.to_datetime(dpd).date() if pd.notna(dpd) and pd.to_datetime(dpd, errors='coerce') != pd.NaT else None
+            data_assinatura = pd.to_datetime(das).date() if pd.notna(pd.to_datetime(das, errors='coerce')) else None
+            data_termino = pd.to_datetime(dta).date() if pd.notna(pd.to_datetime(dta, errors='coerce')) else None
+            data_publi_ce = pd.to_datetime(dpc).date() if pd.notna(pd.to_datetime(dpc, errors='coerce')) else None
+            data_publi_doe = pd.to_datetime(dpd).date() if pd.notna(pd.to_datetime(dpd, errors='coerce')) else None
             agreement_date = AgreementDates(
                 agreement_id=agreement.id,
                 data_assinatura=data_assinatura if data_assinatura != pd.NaT else None,
