@@ -149,7 +149,7 @@ def delete_agreement_date(agreement_date_id: int, db: Session = Depends(get_db))
     logger.info(f'deletando data de convênio {agreement_date_id}')
     return {"message": f"Data de convênio {agreement_date_id} deletada com sucesso"}
 
-@router.get('/atributos')
+@router.get('/atributos/')
 def get_agreement_dates_by_attributes(
     agreement_id: Optional[int] = None,
     data_assinatura: Optional[date] = None,
@@ -180,7 +180,7 @@ def get_agreement_dates_by_attributes(
     logger.info('buscando datas dos convênios com os atributos fornecidos')
     return agreement_dates
 
-@router.get('/quantidade')
+@router.get('/quantidade/')
 def get_agreement_dates_quantidade(db: Session = Depends(get_db)):
     try:
         quantity = db.exec(select(func.count(AgreementDates.id))).one()
@@ -192,7 +192,7 @@ def get_agreement_dates_quantidade(db: Session = Depends(get_db)):
     logger.info('buscando quantidade de datas dos convênios')
     return {'quantidade de datas dos convênios': quantity}
 
-@router.get('/values_per_year', description='Exibe a evolução do valor pago de convênios ao longo dos anos')
+@router.get('/values_per_year/', description='Exibe a evolução do valor pago de convênios ao longo dos anos')
 def get_values_per_year(db: Session = Depends(get_db)):
     try:
         data = db.exec(
