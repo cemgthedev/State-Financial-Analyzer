@@ -96,6 +96,16 @@ def create_agreements(db: Session = Depends(get_db)):
         data_values = [df[col] for col in columns_values if col in df.columns]
         data_dates = [df[col] for col in columns_dates if col in df.columns] # Adição de lista data_dates
         for cod, con, conv, obj, vit, virc, vicc, vat, vp, das, dta, dpc, dpd in zip(*data_agreement, *data_values, *data_dates): #incluindo data_dates no loop
+            # Tratando dados de convênio e valores de convênio
+            cod = None if pd.isna(cod) else cod
+            con = None if pd.isna(con) else con
+            conv = None if pd.isna(conv) else conv
+            obj = None if pd.isna(obj) else obj
+            vit = None if pd.isna(vit) else vit
+            virc = None if pd.isna(virc) else virc
+            vicc = None if pd.isna(vicc) else vicc
+            vat = None if pd.isna(vat) else vat
+            vp = None if pd.isna(vp) else vp
             # Cria os convênios
             agreement = Agreement(codigo_plano_trabalho=cod, concedente=con, convenente=conv, objeto=obj)
             db.add(agreement)
