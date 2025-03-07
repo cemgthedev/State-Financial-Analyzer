@@ -182,7 +182,7 @@ def delete_agreement(agreement_id: int, db: Session = Depends(get_db)):
     logger.info(f'deletando convênio {agreement_id}')
     return {"message": f"Convênio {agreement_id} deletado com sucesso"}
 
-@router.get('/count', description="Retorna a quantidade de convênios")
+@router.get('/count/', description="Retorna a quantidade de convênios")
 def count_agreements(db: Session = Depends(get_db)):
     try:
         quantity = db.exec(select(func.count(Agreement.id))).one()
@@ -194,7 +194,7 @@ def count_agreements(db: Session = Depends(get_db)):
     logger.info('buscando quantidade de convênios')
     return {"quantidade": quantity}
 
-@router.get('/atributos', description="Lista os atributos do modelo de convênios")
+@router.get('/atributos/', description="Lista os atributos do modelo de convênios")
 def get_agreements_attributes(
     codigo_plano_trabalho: Optional[str] = None,
     concedente: Optional[str] = None,
@@ -212,7 +212,7 @@ def get_agreements_attributes(
         if objeto is not None:
             query = query.where(Agreement.objeto == objeto)
         
-        agreements = db.exec(query).all()
+        agreements = db.exec(query.order_by(Agreement.id)).all()
     except Exception as e:
         logger.error(f"Erro ao buscar convênios: {str(e)}")
         db.rollback()
@@ -222,10 +222,10 @@ def get_agreements_attributes(
     result = [item.model_dump() for item in agreements]
     return result
 
-@router.get('/search/codigo_plano_trabalho', description='Faz uma pesquisa por palavra no código plano de trabalho de convênios')
-def get_search_codigo_plano_trabalho(word: str = Query(gt=4), db: Session = Depends(get_db)):
+@router.get('/search/codigo_plano_trabalho/', description='Faz uma pesquisa por palavra no código plano de trabalho de convênios')
+def get_search_codigo_plano_trabalho(word: str = Query(min_length=5), db: Session = Depends(get_db)):
     try:
-        data = db.exec(select(Agreement).where(func.lower(Agreement.codigo_plano_trabalho).contains(func.lower(word)))).all()
+        data = db.exec(select(Agreement).where(func.lower(Agreement.codigo_plano_trabalho).contains(func.lower(word))).order_by(Agreement.id)).all()
     except Exception as e:
         logger.error(f'Erro ao listar os convenios pelo codigo plano de trabalho. Erro: {str(e)}')
         db.rollback()
@@ -241,10 +241,10 @@ def get_search_codigo_plano_trabalho(word: str = Query(gt=4), db: Session = Depe
         } for item in data
     ]
 
-@router.get('/search/concedente', description='Faz uma pesquisa por palavra no concedente de convênios')
-def get_search_concedente(word: str = Query(gt=4), db: Session = Depends(get_db)):
+@router.get('/search/concedente/', description='Faz uma pesquisa por palavra no concedente de convênios')
+def get_search_concedente(word: str = Query(min_length=5), db: Session = Depends(get_db)):
     try:
-        data = db.exec(select(Agreement).where(func.lower(Agreement.concedente).contains(func.lower(word)))).all()
+        data = db.exec(select(Agreement).where(func.lower(Agreement.concedente).contains(func.lower(word))).order_by(Agreement.id)).all()
     except Exception as e:
         logger.error(f'Erro ao listar os convenios pelo concedente. Erro: {str(e)}')
         db.rollback()
@@ -260,10 +260,10 @@ def get_search_concedente(word: str = Query(gt=4), db: Session = Depends(get_db)
         } for item in data
     ]
 
-@router.get('/search/convenente', description='Faz uma pesquisa por palavra no convenente de convênios')
-def get_search_convenente(word: str = Query(gt=4), db: Session = Depends(get_db)):
+@router.get('/search/convenente/', description='Faz uma pesquisa por palavra no convenente de convênios')
+def get_search_convenente(word: str = Query(min_length=5), db: Session = Depends(get_db)):
     try:
-        data = db.exec(select(Agreement).where(func.lower(Agreement.convenente).contains(func.lower(word)))).all()
+        data = db.exec(select(Agreement).where(func.lower(Agreement.convenente).contains(func.lower(word))).order_by(Agreement.id)).all()
     except Exception as e:
         logger.error(f'Erro ao listar os convenios pelo convenente. Erro: {str(e)}')
         db.rollback()
@@ -279,10 +279,10 @@ def get_search_convenente(word: str = Query(gt=4), db: Session = Depends(get_db)
         } for item in data
     ]
 
-@router.get('/search/objeto', description='Faz uma pesquisa por palavra no objeto de convênios')
-def get_search_objeto(word: str = Query(gt=4), db: Session = Depends(get_db)):
+@router.get('/search/objeto/', description='Faz uma pesquisa por palavra no objeto de convênios')
+def get_search_objeto(word: str = Query(min_length=5), db: Session = Depends(get_db)):
     try:
-        data = db.exec(select(Agreement).where(func.lower(Agreement.objeto).contains(func.lower(word)))).all()
+        data = db.exec(select(Agreement).where(func.lower(Agreement.objeto).contains(func.lower(word))).order_by(Agreement.id)).all()
     except Exception as e:
         logger.error(f'Erro ao listar os convenios pelo objeto. Erro: {str(e)}')
         db.rollback()
