@@ -1,6 +1,7 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlmodel import Session, and_, select
+from sqlalchemy import text
+from sqlmodel import Session, select, delete
 from sqlalchemy.sql import func
 from database import get_db
 from models.agreement import Agreement
@@ -84,11 +85,11 @@ def get_agreement(agreement_id: int, db: Session = Depends(get_db)):
 def create_agreements(db: Session = Depends(get_db)):
     columns_agreements = ['codigo_plano_de_trabalho', 'concedente', 'convenente', 'objeto']
     columns_values = ['valor_inicial_total', 'valor_inicial_do_repasse_do_concedente', 'valor_inicial_da_contrapartida_do_convenente/beneficiario', 'valor_atualizado_total', 'valor_pago']
-    columns_dates = ['data_de_assinatura', 'data_de_término_após_aditivo/apostilamento', 'data_de_publicação_na_plataforma_ceará_transparente', 'data_publicação_no_doe']
+    columns_dates = ['data_de_assinatura', 'data_de_termino_apos_aditivo/apostilamento', 'data_de_publicacao_na_plataforma_ceara_transparente', 'data_publicacao_no_doe']
     try:
         curr_dir = os.path.dirname(os.path.abspath(__file__))
         excel_file = os.path.join(curr_dir, "../data/Convênios 2007 - Setembro 2023.xlsx")
-        df = read_excel(excel_file)
+        df = read_excel(excel_file, keep_default_na=False, na_values=[""])
         df.columns = [unidecode(col.lower().replace(' ', '_')) for col in df.columns]
         
         data_agreement = [df[col] for col in columns_agreements if col in df.columns]
@@ -108,11 +109,17 @@ def create_agreements(db: Session = Depends(get_db)):
             db.refresh(agreement_value)
             logger_values.info(f'criando valor de convênio {agreement_value.id}')
             # Cria as datas dos convênios
-            data_assinatura = pd.to_datetime(das).date() if pd.notna(das) else None
-            data_termino = pd.to_datetime(dta).date() if pd.notna(dta) else None
-            data_publi_ce = pd.to_datetime(dpc).date() if pd.notna(dpc) else None
-            data_publi_doe = pd.to_datetime(dpd).date() if pd.notna(dpd) else None
-            agreement_date = AgreementDates(agreement_id=agreement.id, data_assinatura=data_assinatura, data_termino=data_termino, data_publi_ce=data_publi_ce, data_publi_doe=data_publi_doe)
+            data_assinatura = pd.to_datetime(das).date() if pd.notna(das) and pd.to_datetime(das, errors='coerce') != pd.NaT else None
+            data_termino = pd.to_datetime(dta).date() if pd.notna(dta) and pd.to_datetime(dta, errors='coerce') != pd.NaT else None
+            data_publi_ce = pd.to_datetime(dpc).date() if pd.notna(dpc) and pd.to_datetime(dpc, errors='coerce') != pd.NaT else None
+            data_publi_doe = pd.to_datetime(dpd).date() if pd.notna(dpd) and pd.to_datetime(dpd, errors='coerce') != pd.NaT else None
+            agreement_date = AgreementDates(
+                agreement_id=agreement.id,
+                data_assinatura=data_assinatura if data_assinatura != pd.NaT else None,
+                data_termino=data_termino if data_termino != pd.NaT else None,
+                data_publi_ce=data_publi_ce if data_publi_ce != pd.NaT else None,
+                data_publi_doe=data_publi_doe if data_publi_doe != pd.NaT else None
+            )
             db.add(agreement_date)
             db.commit()
             db.refresh(agreement_date)
@@ -278,10 +285,25 @@ def get_search_objeto(word: str = Query(gt=4), db: Session = Depends(get_db)):
         } for item in data
     ]
 
-@router.delete("/", description="Deleta todos os convênios, valores e datas")
+@router.delete("/delete_all/", description="Deleta todos os convênios, valores e datas")
 def delete_all_agreements(db: Session = Depends(get_db)):
     try:
-        db.exec(select(Agreement)).delete()
+        # Deletar todos os registros de agreement_values
+        db.exec(delete(AgreementValues))
+        db.commit()
+        
+        # Deletar todos os registros de agreement_dates
+        db.exec(delete(AgreementDates))
+        db.commit()
+        
+        # Deletar todos os registros de agreements
+        db.exec(delete(Agreement))
+        db.commit()
+        
+        # Resetar o contador de IDs
+        db.exec(text("ALTER SEQUENCE agreement_values_id_seq RESTART WITH 1"))
+        db.exec(text("ALTER SEQUENCE agreement_dates_id_seq RESTART WITH 1"))
+        db.exec(text("ALTER SEQUENCE agreements_id_seq RESTART WITH 1"))
         db.commit()
     except Exception as e:
         logger.error(f"Erro ao deletar todos os convênios: {str(e)}")
