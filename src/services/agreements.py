@@ -4,10 +4,12 @@ from sqlmodel import Session, and_, select
 from sqlalchemy.sql import func
 from database import get_db
 from models.agreement import Agreement
+from models.agreement_dates import AgreementDates
 from models.agreement_values import AgreementValues
 from services.configs import agreements_logger as logger
 from services.configs import agreement_values_logger as logger_values
 from services.configs import agreement_dates_logger as logger_dates # adicionando logger de datas
+import pandas as pd
 from pandas import read_excel
 from unidecode import unidecode
 import os
@@ -92,7 +94,7 @@ def create_agreements(db: Session = Depends(get_db)):
         data_agreement = [df[col] for col in columns_agreements if col in df.columns]
         data_values = [df[col] for col in columns_values if col in df.columns]
         data_dates = [df[col] for col in columns_dates if col in df.columns] # Adição de lista data_dates
-        for cod, con, conv, obj, vit, virc, vicc, vat, vp in zip(*data_agreement, *data_values, *data_dates): #incluindo data_dates no loop
+        for cod, con, conv, obj, vit, virc, vicc, vat, vp, das, dta, dpc, dpd in zip(*data_agreement, *data_values, *data_dates): #incluindo data_dates no loop
             # Cria os convênios
             agreement = Agreement(codigo_plano_trabalho=cod, concedente=con, convenente=conv, objeto=obj)
             db.add(agreement)
@@ -275,3 +277,16 @@ def get_search_objeto(word: str = Query(gt=4), db: Session = Depends(get_db)):
             'objeto': item.objeto
         } for item in data
     ]
+
+@router.delete("/", description="Deleta todos os convênios, valores e datas")
+def delete_all_agreements(db: Session = Depends(get_db)):
+    try:
+        db.exec(select(Agreement)).delete()
+        db.commit()
+    except Exception as e:
+        logger.error(f"Erro ao deletar todos os convênios: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro ao deletar todos os convênios. Erro: {str(e)}")
+        
+    logger.info('deletando todos os convênios, valores e datas')
+    return {"message": "Todos os convênios, valores e datas foram deletados com sucesso"}
