@@ -162,7 +162,7 @@ def get_contract(contract_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Erro ao obter contrato")
     
 # Listagem dos contratos com paginação e filtros
-@router.get("/", response_model=List[Contract], description="Lista os contratos")
+@router.get("/", description="Lista os contratos")
 def list_contracts(
     db: Session = Depends(get_db),
     page: Optional[int] = Query(default=1, ge=0, description="Página de contratos"),
@@ -334,6 +334,7 @@ def percentual_contratos_regularizados(db: Session = Depends(get_db)):
         select(AdministrativeProcess.situacao_fisica, func.count(Contract.id))
         .join(Contract, Contract.id == AdministrativeProcess.contract_id)
         .group_by(AdministrativeProcess.situacao_fisica)
+        .order_by(func.count(Contract.id).desc())
     )
     
     result = db.exec(stmt).all()
@@ -342,11 +343,11 @@ def percentual_contratos_regularizados(db: Session = Depends(get_db)):
         return {"message": "Nenhum dado encontrado"}
     
     situacoes, contagens = zip(*result)
-    top_situacoes = list(situacoes[:5])
-    top_contagens = list(contagens[:5])
+    top_situacoes = list(situacoes[:3])
+    top_contagens = list(contagens[:3])
     
-    if len(situacoes) > 5:
-        outras_contagens = sum(contagens[5:])
+    if len(situacoes) > 3:
+        outras_contagens = sum(contagens[3:])
         top_situacoes.append("Outras")
         top_contagens.append(outras_contagens)
     
