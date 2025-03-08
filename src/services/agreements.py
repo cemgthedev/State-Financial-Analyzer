@@ -17,6 +17,9 @@ import os
 from datetime import datetime
 
 from utils.safe_parse_date import safe_parse_date
+import matplotlib.pyplot as plt
+import io
+from fastapi.responses import Response
 # Criar roteador
 router = APIRouter(prefix="/agreements", tags=["Agreements"])
 
@@ -325,3 +328,85 @@ def delete_all_agreements(db: Session = Depends(get_db)):
         
     logger.info('deletando todos os convênios, valores e datas')
     return {"message": "Todos os convênios, valores e datas foram deletados com sucesso"}
+
+@router.get("/comparison-original-updated")
+def comparacao_valores_originais_atualizados(db: Session = Depends(get_db)):
+    # Consulta ao banco de dados
+    stmt = (
+        select(
+            func.strftime('%Y', Agreement.dates[0].data_assinatura).label('Ano_assinatura'),
+            func.sum(Agreement.values[0].valor_inicial_total).label('Valor_original'),
+            func.sum(Agreement.values[0].valor_atualizado_total).label('Valor_atualizado')
+        )
+        .group_by('Ano_assinatura')
+        .order_by('Ano_assinatura')
+    )
+
+    result = db.exec(stmt).all()
+
+    if not result:
+        return {"message": "Nenhum convênio encontrado"}
+
+    # Preparação dos dados para o gráfico
+    df = pd.DataFrame(result)
+    df['Ano_assinatura'] = pd.to_numeric(df['Ano_assinatura'])  # Converter para numérico
+    df = df.set_index('Ano_assinatura')
+
+    # Geração do gráfico de barras
+    plt.figure(figsize=(12, 6))
+    plt.bar(df.index - 0.2, df['Valor_original'], width=0.4, label='Valores Originais', alpha=0.7)
+    plt.bar(df.index + 0.2, df['Valor_atualizado'], width=0.4, label='Valores Atualizados', alpha=0.7)
+    plt.xlabel('Ano de Assinatura')
+    plt.ylabel('Valor')
+    plt.title('Comparação de Valores de Convênios por Ano')
+    plt.legend()
+    plt.xticks(df.index)
+    plt.tight_layout()
+
+    # Salvar o gráfico em um buffer de bytes
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
+    plt.close()
+    buf.seek(0)
+
+    # Retornar o gráfico como uma imagem PNG
+    return Response(content=buf.getvalue(), media_type="image/png")
+
+@router.get("/evolution-value-paid")
+def evolucao_valores_pagos(db: Session = Depends(get_db)):
+    # Consulta ao banco de dados
+    stmt = (
+        select(
+            func.strftime('%Y', Agreement.dates[0].data_assinatura).label('Ano de Assinatura'),
+            func.sum(Agreement.values[0].valor_pago).label('Valor Pago')
+        )
+        .group_by('Ano de Assinatura')
+        .order_by('Ano de Assinatura')
+    )
+
+    result = db.exec(stmt).all()
+
+    if not result:
+        return {"message": "Nenhum convênio encontrado"}
+
+    # Preparação dos dados para o gráfico
+    df = pd.DataFrame(result)
+    df['Ano de Assinatura'] = pd.to_numeric(df['Ano de Assinatura'])  # Converter para numérico
+    df = df.set_index('Ano de Assinatura')
+
+    # Geração do gráfico de linhas
+    plt.figure(figsize=(12, 6))
+    plt.plot(df.index, df['Valor Pago'], marker='o')
+    plt.title('Evolução dos Valores Totais Pagos de Convênios por Ano')
+    plt.xlabel('Ano de Assinatura')
+    plt.ylabel('Valor Pago')
+    plt.grid(True)
+
+    # Salvar o gráfico em um buffer de bytes
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
+    plt.close()
+    buf.seek(0)
+
+    # Retornar o gráfico como uma imagem PNG
+    return Response(content=buf.getvalue(), media_type="image/png")
