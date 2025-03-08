@@ -12,48 +12,48 @@ import pandas as pd
 # Criar roteador para AgreementDates
 router = APIRouter(prefix="/agreement_dates", tags=["Agreement Dates"])
 
-@router.post("/")
-async def create_agreement_dates(db: Session = Depends(get_db)):
-    try:
-        # Caminho para o arquivo Excel
-        caminho_arquivo = os.path.join("data", "Convênios 2007 - Setembro 2023.xlsx") #cria o caminho
+#@router.post("/")
+#async def create_agreement_dates(db: Session = Depends(get_db)):
+#    try:
+#        # Caminho para o arquivo Excel
+#        caminho_arquivo = os.path.join("data", "Convênios 2007 - Setembro 2023.xlsx") #cria o caminho#
 
         # Ler o arquivo Excel e filtrar as colunas desejadas
-        df = pd.read_excel(caminho_arquivo)
-        colunas_desejadas = [
-            'Data de assinatura',
-            'Data de término após aditivo/apostilamento',
-            'Data de publicação na Plataforma Ceará Transparente',
-            'Data publicação no DOE',
-        ]
-        df_filtrado = df[colunas_desejadas]
+#        df = pd.read_excel(caminho_arquivo)
+#        colunas_desejadas = [
+#            'Data de assinatura',
+#            'Data de término após aditivo/apostilamento',
+#            'Data de publicação na Plataforma Ceará Transparente',
+#            'Data publicação no DOE',
+#        ]
+#        df_filtrado = df[colunas_desejadas]
 
         # Iterar sobre as linhas do DataFrame filtrado e criar objetos AgreementDates
-        for index, row in df_filtrado.iterrows():
+ #       for index, row in df_filtrado.iterrows():
             # Converter as datas para o formato correto (date)
-            data_assinatura = pd.to_datetime(row['Data de assinatura']).date() if pd.notna(row['Data de assinatura']) else None
-            data_termino = pd.to_datetime(row['Data de término após aditivo/apostilamento']).date() if pd.notna(row['Data de término após aditivo/apostilamento']) else None
-            data_publi_ce = pd.to_datetime(row['Data de publicação na Plataforma Ceará Transparente']).date() if pd.notna(row['Data de publicação na Plataforma Ceará Transparente']) else None
-            data_publi_doe = pd.to_datetime(row['Data publicação no DOE']).date() if pd.notna(row['Data publicação no DOE']) else None
+  #          data_assinatura = pd.to_datetime(row['Data de assinatura']).date() if pd.notna(row['Data de assinatura']) else None
+   #         data_termino = pd.to_datetime(row['Data de término após aditivo/apostilamento']).date() if pd.notna(row['Data de término após aditivo/apostilamento']) else None
+  #          data_publi_ce = pd.to_datetime(row['Data de publicação na Plataforma Ceará Transparente']).date() if pd.notna(row['Data de publicação na Plataforma Ceará Transparente']) else None
+  #          data_publi_doe = pd.to_datetime(row['Data publicação no DOE']).date() if pd.notna(row['Data publicação no DOE']) else None
 
 
             # Criar um objeto AgreementDates
-            agreement_date = AgreementDates(
-                data_assinatura=data_assinatura,
-                data_termino=data_termino,
-                data_publi_ce=data_publi_ce,
-                data_publi_doe=data_publi_doe
-            )
+ #           agreement_date = AgreementDates(
+ #               data_assinatura=data_assinatura,
+ #               data_termino=data_termino,
+ #               data_publi_ce=data_publi_ce,
+ #               data_publi_doe=data_publi_doe
+ #           )
 
             # Adicionar e commitar o objeto ao banco de dados
-            db.add(agreement_date)
-        db.commit()
+ #           db.add(agreement_date)
+ #       db.commit()
 
-        return {"message": "Datas de convênios criadas com sucesso"}
+  #      return {"message": "Datas de convênios criadas com sucesso"}
 
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Erro ao criar datas de convênios: {str(e)}")
+ #   except Exception as e:
+ #       db.rollback()
+ #       raise HTTPException(status_code=500, detail=f"Erro ao criar datas de convênios: {str(e)}")
 
 # Listar datas de convênios 
 @router.get("/")
