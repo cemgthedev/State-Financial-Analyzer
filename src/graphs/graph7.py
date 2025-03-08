@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # Caminho para o seu arquivo Excel
-caminho_arquivo = '/src/data/Convênios 2007 - Setembro 2023.xlsx'
+caminho_arquivo = '../data/Convênios 2007 - Setembro 2023.xlsx'
 
 # Carrega o arquivo Excel em um DataFrame
 df = pd.read_excel(caminho_arquivo)
