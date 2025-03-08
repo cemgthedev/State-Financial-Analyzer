@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Carregar os dados do Excel
-convenios_2007_df = pd.read_excel('/data/Convênios 2007 - Setembro 2023.xlsx')
+convenios_2007_df = pd.read_excel('../data/Convênios 2007 - Setembro 2023.xlsx')
 df = convenios_2007_df
 
 # Extrair o ano da data de assinatura
