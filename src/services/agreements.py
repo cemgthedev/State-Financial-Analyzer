@@ -346,7 +346,11 @@ def comparacao_valores_originais_atualizados(db: Session = Depends(get_db)):
 
     if not result:
         return {"message": "Nenhum convênio encontrado"}
-
+   
+    df = pd.DataFrame(result)
+    df['Ano_assinatura'] = pd.to_numeric(df['Ano_assinatura'], errors='coerce').fillna(0) # Tratar valores não numéricos
+    df['Ano_assinatura'] = df['Ano_assinatura'].astype(int) # transforma para inteiro
+    df = df.set_index('Ano_assinatura')
     # Preparação dos dados para o gráfico
     df = pd.DataFrame(result)
     df['Ano_assinatura'] = pd.to_numeric(df['Ano_assinatura'])  # Converter para numérico
@@ -388,7 +392,11 @@ def evolucao_valores_pagos(db: Session = Depends(get_db)):
 
     if not result:
         return {"message": "Nenhum convênio encontrado"}
-
+    
+    df = pd.DataFrame(result)
+    df['Ano de Assinatura'] = pd.to_numeric(df['Ano de Assinatura'], errors='coerce').fillna(0) # Tratar valores não numéricos
+    df['Ano de Assinatura'] = df['Ano de Assinatura'].astype(int) # transforma para inteiro
+    df = df.set_index('Ano de Assinatura')
     # Preparação dos dados para o gráfico
     df = pd.DataFrame(result)
     df['Ano de Assinatura'] = pd.to_numeric(df['Ano de Assinatura'])  # Converter para numérico
